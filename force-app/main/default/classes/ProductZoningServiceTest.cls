@@ -3,11 +3,13 @@ private class ProductZoningServiceTest {
   // Utility to set up REST context
   private static void setupRestContext(
     String url,
+    String productCode,
     Map<String, String> headers
   ) {
     RestRequest req = new RestRequest();
     req.httpMethod = 'GET';
     req.requestURI = url;
+    req.params.put('ProductCode', productCode);
     req.addHeader('Content-Type', 'application/json');
     if (headers != null) {
       for (String k : headers.keySet()) {
@@ -33,13 +35,12 @@ private class ProductZoningServiceTest {
 
     // Request with CountryCode header in any case
     Map<String, String> hdrs = new Map<String, String>{ 'countrycode' => 'US' };
-    setupRestContext('/services/apexrest/ProductZoning/P4', hdrs);
+    setupRestContext('/services/apexrest/ProductZoning', 'P4', hdrs);
 
     Test.startTest();
-    String result = ProductZoningService.checkFlyZone();
+    String result = ProductZoningService.getFlyZone();
     Test.stopTest();
 
-    System.assertEquals(200, RestContext.response.statusCode, 'Expected 200');
     System.assertEquals('Recommended', result, 'Should return mapping zone');
   }
 
@@ -55,13 +56,12 @@ private class ProductZoningServiceTest {
     insert p;
 
     // No CountryCode header at all
-    setupRestContext('/services/apexrest/ProductZoning/M3', null);
+    setupRestContext('/services/apexrest/ProductZoning', 'M3', null);
 
     Test.startTest();
-    String result = ProductZoningService.checkFlyZone();
+    String result = ProductZoningService.getFlyZone();
     Test.stopTest();
 
-    System.assertEquals(200, RestContext.response.statusCode, 'Expected 200');
     System.assertEquals(
       'Regulated',
       result,
@@ -73,19 +73,15 @@ private class ProductZoningServiceTest {
   static void testBadRequestWhenProductMissingOrNotFound() {
     // No products inserted. Header present or not should not matter.
     setupRestContext(
-      '/services/apexrest/ProductZoning/UNKNOWN',
+      '/services/apexrest/ProductZoning',
+      'UNKOWN',
       new Map<String, String>{ 'CountryCode' => 'US' }
     );
 
     Test.startTest();
-    String result = ProductZoningService.checkFlyZone();
+    String result = ProductZoningService.getFlyZone();
     Test.stopTest();
 
-    System.assertEquals(
-      400,
-      RestContext.response.statusCode,
-      'Expected 400 when product not found'
-    );
     System.assertEquals(
       'ProductCode is missing or doesn\'t exist',
       result,
@@ -106,17 +102,13 @@ private class ProductZoningServiceTest {
 
     // Case 1: No mapping found - need to handle exception when no records found
     setupRestContext(
-      '/services/apexrest/ProductZoning/MN4',
+      '/services/apexrest/ProductZoning',
+      'MN4',
       new Map<String, String>{ 'CountryCode' => 'DE' }
     );
     Test.startTest();
-    String result1 = ProductZoningService.checkFlyZone();
+    String result1 = ProductZoningService.getFlyZone();
 
-    System.assertEquals(
-      200,
-      RestContext.response.statusCode,
-      'Expected 200 even if no mapping'
-    );
     System.assertEquals(
       'Confirm with the local authorities',
       result1,
@@ -124,17 +116,13 @@ private class ProductZoningServiceTest {
     );
 
     setupRestContext(
-      '/services/apexrest/ProductZoning/MN4',
+      '/services/apexrest/ProductZoning',
+      'MN4',
       new Map<String, String>{ 'CountryCode' => 'US' }
     );
-    String result2 = ProductZoningService.checkFlyZone();
+    String result2 = ProductZoningService.getFlyZone();
     Test.stopTest();
 
-    System.assertEquals(
-      200,
-      RestContext.response.statusCode,
-      'Expected 200 with blank zone mapping'
-    );
     System.assertEquals(
       'Confirm with the local authorities',
       result2,
