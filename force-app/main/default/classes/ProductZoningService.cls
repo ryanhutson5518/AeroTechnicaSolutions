@@ -17,48 +17,55 @@ global with sharing class ProductZoningService {
       }
     }
 
-    // Extract ProductCode from URL path after /ProductZoning/
-    String productCode;
-    String uri = RestContext.request.requestURI; // e.g., /services/apexrest/ProductZoning/ABC-123/extra
-    // Split and get first segment after 'ProductZoning'
-    productCode = null;
-    if (String.isNotBlank(uri)) {
-      List<String> parts = uri.split('/');
-      // ['', 'services', 'apexrest', 'ProductZoning', 'ABC-123', 'extra']
-      if (parts.size() > 4 && parts[3].equalsIgnoreCase('ProductZoning')) {
-        if (parts.size() > 4 && String.isNotBlank(parts[4])) {
-          productCode = EncodingUtil.urlDecode(parts[4], 'UTF-8');
-        }
+    // Extract ProductCode: split on "/ProductZoning/" and take the next segment
+    List<String> segments = RestContext.request.requestURI.split('/');
+    Integer indexOfMarker = segments.indexOf('ProductZoning');
+    String productCode = segments.size() - 1 >=
+      indexOfMarker + 1
+      ? segments[indexOfMarker + 1]
+      : null;
+
+    // 1) Query Product by ProductCode; only select Family
+    Product2 prod = null;
+    if (String.isNotBlank(productCode)) {
+      try {
+        prod = [
+          SELECT Family
+          FROM Product2
+          WHERE ProductCode = :productCode
+          LIMIT 1
+        ];
+      } catch (Exception ex) {
       }
     }
 
-    // 1) Query Product by ProductCode; only select Family
-    Product2 prod = [
-      SELECT Family
-      FROM Product2
-      WHERE ProductCode = :productCode
-      LIMIT 1
-    ];
-
     // Validate ProductCode
-    if (String.isBlank(prod.ProductCode)) {
+    if (prod == null) {
       RestContext.response.statusCode = 400; // Bad Request
       return 'ProductCode is missing or doesn\'t exist';
     }
 
     // 2) Query Product_Geo_Mapping__mdt by Product_Family__c and Country_Code__c (exact match), return first match
-    Product_Geo_Mapping__mdt mapping = [
-      SELECT Permissable_Fly_Zone__c
-      FROM Product_Geo_Mapping__mdt
-      WHERE Product_Family__c = :prod.Family AND Country_Code__c = :countryCode
-      LIMIT 1
-    ];
+    Product_Geo_Mapping__mdt mapping = null;
+    try {
+      mapping = [
+        SELECT Permissible_Fly_Zone__c
+        FROM Product_Geo_Mapping__mdt
+        WHERE
+          Product_Family__c = :prod.family
+          AND Country_Code__c = :countryCode
+        LIMIT 1
+      ];
+    } catch (Exception ex) {
+    }
+
+    String flyZone = mapping?.Permissible_Fly_Zone__c;
     RestContext.response.statusCode = 200;
 
-    if (mapping == null || String.isBlank(mapping.Permissable_Fly_Zone__c)) {
+    if (String.isEmpty(flyZone)) {
       return 'Confirm with the local authorities';
     }
 
-    return mapping.Permissable_Fly_Zone__c;
+    return flyZone;
   }
 }
