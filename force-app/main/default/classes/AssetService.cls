@@ -50,6 +50,8 @@ global with sharing class AssetService {
         Insurance__c = comprehensiveInsurance.Id
       );
       insert newClaim;
+
+      newClaim = [SELECT Name FROM Claim__c WHERE Id = :newClaim.Id LIMIT 1];
       claimName = newClaim.Name;
     } else {
       claimName = existingLossClaim.Name + 'already filed.';

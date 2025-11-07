@@ -3,10 +3,14 @@ private class AssetServiceTest {
   @isTest
   static void testReportLostDeviceWithValidAssetAndCoverage() {
     // Setup test data
+    Account testAccount = new Account(Name = 'Test Account');
+    insert testAccount;
+
     Asset testAsset = new Asset(
       Name = 'Test Asset',
       Asset_Identifier__c = 'TEST-001',
-      Status = 'Active'
+      Status = 'Active',
+      AccountId = testAccount.Id
     );
     insert testAsset;
 
@@ -40,6 +44,11 @@ private class AssetServiceTest {
       FROM Claim__c
       WHERE Asset__c = :testAsset.Id
     ];
+    System.assertEquals(
+      true,
+      result.length() > 0,
+      'Should return name of claim'
+    );
     System.assertEquals(1, claims.size(), 'Should have created one claim');
     System.assertEquals(
       'Loss',
@@ -51,10 +60,14 @@ private class AssetServiceTest {
   @isTest
   static void testReportLostDeviceWithValidAssetButNoCoverage() {
     // Setup test data
+    Account testAccount = new Account(Name = 'Test Account');
+    insert testAccount;
+
     Asset testAsset = new Asset(
       Name = 'Test Asset',
       Asset_Identifier__c = 'TEST-002',
-      Status = 'Active'
+      Status = 'Active',
+      AccountId = testAccount.Id
     );
     insert testAsset;
 
@@ -92,10 +105,14 @@ private class AssetServiceTest {
   @isTest
   static void testReportLostDeviceWithExistingLossClaim() {
     // Setup test data
+    Account testAccount = new Account(Name = 'Test Account');
+    insert testAccount;
+
     Asset testAsset = new Asset(
       Name = 'Test Asset',
       Asset_Identifier__c = 'TEST-003',
-      Status = 'Active'
+      Status = 'Active',
+      AccountId = testAccount.Id
     );
     insert testAsset;
 
