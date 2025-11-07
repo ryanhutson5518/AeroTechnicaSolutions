@@ -9,4 +9,8 @@
         <members>Claim__c</members>
         <name>CustomObject</name>
     </types>
+    <types>
+        <members>Contact_Certification__c</members>
+        <name>CustomObject</name>
+    </types>
 </Package>
